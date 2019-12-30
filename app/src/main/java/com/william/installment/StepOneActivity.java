@@ -18,8 +18,11 @@ import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Bundle;
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.databinding.DataBindingUtil;
@@ -27,6 +30,7 @@ import androidx.lifecycle.Observer;
 import cn.jpush.sms.SMSSDK;
 import cn.jpush.sms.listener.SmscheckListener;
 import cn.jpush.sms.listener.SmscodeListener;
+
 import com.william.installment.databinding.StepOneActivityBinding;
 
 public class StepOneActivity extends AppCompatActivity implements OnClickListener {
@@ -41,9 +45,9 @@ public class StepOneActivity extends AppCompatActivity implements OnClickListene
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         mViewDataBinding = DataBindingUtil
-            .inflate(LayoutInflater.from(this), R.layout.step_one_activity, null, false);
+                .inflate(LayoutInflater.from(this), R.layout.step_one_activity, null, false);
         mViewDataBinding.setOnClickListener(this);
         setContentView(mViewDataBinding.getRoot());
         Bitmap bitmap = Code.getInstance().createBitmap();
@@ -104,66 +108,31 @@ public class StepOneActivity extends AppCompatActivity implements OnClickListene
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
-            case R.id.get_phone_vc_bt:
-                //获取验证码
-                String phoneNumber = mViewDataBinding.phoneNumberEt.getText().toString().trim();
-                if (!TextUtils.isEmpty(phoneNumber) && Utils.isPhoneNumber(phoneNumber)) {
-                    getSmsCode(phoneNumber);
-                } else {
-                    Toast.makeText(StepOneActivity.this, "请输入正确的手机号码", Toast.LENGTH_SHORT).show();
-                }
-
-                break;
             case R.id.register_btn:
-                // 立即注册
-                String phoneVc = mViewDataBinding.phoneVcEt.getText().toString().trim();
-                if (TextUtils.isEmpty(phoneVc)) {
-                    Toast.makeText(StepOneActivity.this, "验证码为空", Toast.LENGTH_SHORT).show();
+                String phoneNumber = mViewDataBinding.phoneNumberEt.getText().toString();
+                if (TextUtils.isEmpty(phoneNumber)) {
+                    Toast.makeText(StepOneActivity.this, "请输入手机号码", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                phoneNumber = mViewDataBinding.phoneNumberEt.getText().toString().trim();
-                if (!TextUtils.isEmpty(phoneNumber) && Utils.isPhoneNumber(phoneNumber)) {
-                    checkCode(phoneNumber, phoneVc);
-                } else {
-                    Toast.makeText(StepOneActivity.this, "请输入正确的手机号码", Toast.LENGTH_SHORT).show();
+                if (!Utils.isPhoneNumber(phoneNumber)) {
+                    Toast.makeText(StepOneActivity.this, "输入的手机号码有误", Toast.LENGTH_SHORT).show();
+                    return;
                 }
+                String ivVc = mViewDataBinding.imageVcEt.getText().toString();
+                if (TextUtils.isEmpty(ivVc)) {
+                    Toast.makeText(StepOneActivity.this, "图片验证码为空", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (!Code.getInstance().getCode().equalsIgnoreCase(ivVc)) {
+                    Toast.makeText(StepOneActivity.this, "图片验证码错误", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                Intent intent = new Intent(StepOneActivity.this, AuthenticationActivity.class);
+                startActivity(intent);
+                finish();
                 break;
             default:
                 break;
         }
-    }
-
-    private void checkCode(String phoneNumber, String phoneVc) {
-        SMSSDK.getInstance().checkSmsCodeAsyn(phoneNumber, phoneVc, new SmscheckListener() {
-            @Override
-            public void checkCodeSuccess(final String code) {
-                Intent intent = new Intent(StepOneActivity.this, StepTwoActivity.class);
-                startActivity(intent);
-            }
-
-            @Override
-            public void checkCodeFail(int errCode, final String errMsg) {
-                Toast.makeText(StepOneActivity.this, "手机验证码错误", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void getSmsCode(String phoneNumber) {
-        SMSSDK.getInstance().getSmsCodeAsyn(phoneNumber, "您的验证码", new SmscodeListener() {
-            @Override
-            public void getCodeSuccess(final String uuid) {
-                // 获取验证码成功，uuid 为此次获取的唯一标识码。
-                mSmsUUid = uuid;
-                Toast.makeText(StepOneActivity.this, "获取手机验证码成功", Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void getCodeFail(int errCode, final String errMsg) {
-                // 获取验证码失败 errCode 为错误码，详情请见文档后面的错误码表；errMsg 为错误描述。
-                mSmsUUid = "";
-                Toast.makeText(StepOneActivity.this, "获取手机验证码失败", Toast.LENGTH_SHORT).show();
-                Log.i(TAG, "[nelson] -- getCodeFail : " + errMsg + " ErrorCode : " + errCode);
-            }
-        });
     }
 }
